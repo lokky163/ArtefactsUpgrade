@@ -49,9 +49,9 @@
 
 <div class="container">
     <h1>Калькулятор артефактов</h1>
-    <p>Введите целевые уровни через запятую или <b>Enter</b>. Калькулятор покажет сумму для каждого артефакта отдельно и посчитает <b>общий итог</b>.</p>
+    <p>Введите целевые уровни через запятую или <b>Enter</b>. Все введенные значения суммируются в общем итоге, но в списке ниже дубликаты скрыты [1, 2].</p>
     
-    <textarea id="levelsInput" placeholder="Пример:&#10;10&#10;55&#10;135" rows="4"></textarea>
+    <textarea id="levelsInput" placeholder="Пример:&#10;160&#10;120&#10;120" rows="4"></textarea>
     <button class="btn" onclick="calculateResources()">Рассчитать затраты</button>
 
     <div class="results" id="resultsContainer">
@@ -85,17 +85,17 @@ function initCosts() {
     addRange(181, 190, 370, 0);
     addRange(191, 200, 390, 0);
 
-    // Уровни прорыва (Breakthrough) — теперь ключи прописаны верно
-    stepCosts[10]  = { white: 50,   rainbow: 60 };
-    stepCosts[30]  = { white: 250,  rainbow: 220 };
-    stepCosts[50]  = { white: 450,  rainbow: 380 };
-    stepCosts[70]  = { white: 650,  rainbow: 540 };
-    stepCosts[90]  = { white: 850,  rainbow: 700 };
-    stepCosts[110] = { white: 1050, rainbow: 860 };
-    stepCosts[130] = { white: 1250, rainbow: 1020 };
-    stepCosts[150] = { white: 1450, rainbow: 1180 };
-    stepCosts[170] = { white: 1650, rainbow: 1340 };
-    stepCosts[190] = { white: 1850, rainbow: 1500 };
+    // Уровни прорыва (Breakthrough)
+    stepCosts  = { white: 50,   rainbow: 60 };
+    stepCosts  = { white: 250,  rainbow: 220 };
+    stepCosts  = { white: 450,  rainbow: 380 };
+    stepCosts  = { white: 650,  rainbow: 540 };
+    stepCosts  = { white: 850,  rainbow: 700 };
+    stepCosts = { white: 1050, rainbow: 860 };
+    stepCosts = { white: 1250, rainbow: 1020 };
+    stepCosts = { white: 1450, rainbow: 1180 };
+    stepCosts = { white: 1650, rainbow: 1340 };
+    stepCosts = { white: 1850, rainbow: 1500 };
 }
 
 function addRange(start, end, white, rainbow) {
@@ -122,21 +122,34 @@ function calculateResources() {
     
     container.innerHTML = ''; 
 
-    const levels = matches 
+    // Получаем полный список введенных уровней
+    const allLevels = matches 
         ? matches.map(x => parseInt(x, 10)).filter(x => x >= 1 && x <= 200)
         : [];
 
-    if (levels.length === 0) {
+    if (allLevels.length === 0) {
         container.innerHTML = '<div class="error-msg">Введите корректные уровни от 1 до 200</div>';
         return;
     }
 
     let grandWhite = 0;
     let grandRainbow = 0;
+
+    // ВАЖНО: Считаем общий итог по ВСЕМ введенным значениям (включая дубликаты) [1]
+    allLevels.forEach(targetLvl => {
+        for (let l = 1; l < targetLvl; l++) {
+            if (stepCosts[l]) {
+                grandWhite += stepCosts[l].white;
+                grandRainbow += stepCosts[l].rainbow;
+            }
+        }
+    });
+
+    // Оставляем только уникальные уровни для отображения в списке ниже [2]
+    const uniqueLevels = [...new Set(allLevels)].sort((a, b) => a - b);
     let blocksHtml = '';
 
-    // Вычисляем стоимость для каждого уровня отдельно
-    levels.forEach(targetLvl => {
+    uniqueLevels.forEach(targetLvl => {
         let totalWhite = 0;
         let totalRainbow = 0;
 
@@ -147,11 +160,7 @@ function calculateResources() {
             }
         }
 
-        // Суммируем в общий итог
-        grandWhite += totalWhite;
-        grandRainbow += totalRainbow;
-
-        // Генерируем детальную строчку для уровня
+        // Генерируем детальную строчку (только для уникальных) [2]
         blocksHtml += `
             <div class="block-item">
                 <div class="block-title">От 1 до ${targetLvl} ур.</div>
@@ -182,7 +191,6 @@ function calculateResources() {
         </div>
     `;
 
-    // Выводим сначала общий итог, затем расшифровку по каждому артефакту
     container.innerHTML = grandTotalHtml + blocksHtml;
 }
 </script>
